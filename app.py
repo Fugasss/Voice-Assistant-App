@@ -70,7 +70,8 @@ import traceback  # вывод traceback без остановки работы 
 import json  # работа с json-файлами и json-строками
 import wave  # создание и чтение аудиофайлов формата wav
 import os  # работа с файловой системой
-
+from VoiceAssistant import VoiceAssistant
+from OwnerPerson import OwnerPerson
 
 class Translation:
     """
@@ -92,27 +93,6 @@ class Translation:
             print(colored("Not translated phrase: {}".format(text), "red"))
             return text
 
-
-class OwnerPerson:
-    """
-    Информация о владельце, включающие имя, город проживания, родной язык речи, изучаемый язык (для переводов текста)
-    """
-    name = ""
-    home_city = ""
-    native_language = ""
-    target_language = ""
-
-
-class VoiceAssistant:
-    """
-    Настройки голосового ассистента, включающие имя, пол, язык речи
-    Примечание: для мультиязычных голосовых ассистентов лучше создать отдельный класс,
-    который будет брать перевод из JSON-файла с нужным языком
-    """
-    name = ""
-    sex = ""
-    speech_language = ""
-    recognition_language = ""
 
 
 def setup_assistant_voice():
@@ -487,10 +467,6 @@ def execute_command_with_name(command_name: str, *args: list):
         else:
             pass  # print("Command not found")
 
-
-# перечень команд для использования (качестве ключей словаря используется hashable-тип tuple)
-# в качестве альтернативы можно использовать JSON-объект с намерениями и сценариями
-# (подобно тем, что применяют для чат-ботов)
 commands = {
     ("hello", "hi", "morning", "привет"): play_greetings,
     ("bye", "goodbye", "quit", "exit", "stop", "пока"): play_farewell_and_quit,
@@ -515,21 +491,23 @@ if __name__ == "__main__":
 
     # настройка данных пользователя
     person = OwnerPerson()
-    person.name = "Tanya"
-    person.home_city = "Yekaterinburg"
-    person.native_language = "ru"
-    person.target_language = "en"
-
-    # настройка данных голосового помощника
     assistant = VoiceAssistant()
-    assistant.name = "Alice"
-    assistant.sex = "female"
-    assistant.speech_language = "en"
 
-    # установка голоса по умолчанию
+    with open("user.json", 'r') as jFile:
+        settings = json.loads(jFile.read()) 
+        person.name = settings["name"]
+        person.home_city = settings["home_city"]
+        person.native_language = settings["native_language"]
+        person.target_language = settings["target_language"]
+        
+    with open("assistant.json", 'r') as jFile: 
+        settings = json.loads(jFile.read()) 
+        assistant.name = settings["name"]
+        assistant.sex = settings['sex']
+        assistant.speech_language = settings["speech_language"]
+
     setup_assistant_voice()
 
-    # добавление возможностей перевода фраз (из заготовленного файла)
     translator = Translation()
 
     # загрузка информации из .env-файла (там лежит API-ключ для OpenWeatherMap)
@@ -546,7 +524,3 @@ if __name__ == "__main__":
         command = voice_input[0]
         command_options = [str(input_part) for input_part in voice_input[1:len(voice_input)]]
         execute_command_with_name(command, command_options)
-
-# TODO food order
-# TODO recommend film by rating/genre (use recommendation system project)
-#  как насчёт "название фильма"? Вот его описание:.....
